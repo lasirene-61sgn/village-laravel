@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin API Demo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Admin API Demo</h1>
+    
+    <div>
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" value="admin@gmail.com" required><br><br>
+            <input type="password" id="password" placeholder="Password" value="12345678" required><br><br>
+            <button type="submit">Login</button>
+        </form>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div>
+        <h2>Profile (requires login)</h2>
+        <button id="profileBtn">Get Profile</button>
+        <div id="profileResult"></div>
+    </div>
+    
+    <div>
+        <h2>Customers (requires login)</h2>
+        <button id="customersBtn">Get Customers</button>
+        <div id="customersResult"></div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        
+        // Login form submission
+        $('#loginForm').submit(function(e) {
+            e.preventDefault();
+            
+            const email = $('#email').val();
+            const password = $('#password').val();
+            
+            $.ajax({
+                url: 'http://127.0.0.1:8000/api/admin/login',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    email: email,
+                    password: password
+                }),
+                success: function(response) {
+                    if (response.status === 'success') {
+                        authToken = response.data.token;
+                        $('#loginResult').html('<p style="color: green;">Login successful! Token: ' + authToken.substring(0, 20) + '...</p>');
+                    } else {
+                        $('#loginResult').html('<p style="color: red;">Login failed: ' + response.message + '</p>');
+                    }
+                },
+                error: function(xhr) {
+                    $('#loginResult').html('<p style="color: red;">Login error: ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+        
+        // Get profile
+        $('#profileBtn').click(function() {
+            if (!authToken) {
+                $('#profileResult').html('<p style="color: red;">Please login first!</p>');
+                return;
+            }
+            
+            $.ajax({
+                url: 'http://127.0.0.1:8000/api/admin/profile',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#profileResult').html('<p style="color: green;">Profile retrieved successfully!</p><pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+                    } else {
+                        $('#profileResult').html('<p style="color: red;">Profile error: ' + response.message + '</p>');
+                    }
+                },
+                error: function(xhr) {
+                    $('#profileResult').html('<p style="color: red;">Profile error: ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+        
+        // Get customers
+        $('#customersBtn').click(function() {
+            if (!authToken) {
+                $('#customersResult').html('<p style="color: red;">Please login first!</p>');
+                return;
+            }
+            
+            $.ajax({
+                url: 'http://127.0.0.1:8000/api/admin/customers',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#customersResult').html('<p style="color: green;">Customers retrieved successfully!</p><pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
+                    } else {
+                        $('#customersResult').html('<p style="color: red;">Customers error: ' + response.message + '</p>');
+                    }
+                },
+                error: function(xhr) {
+                    $('#customersResult').html('<p style="color: red;">Customers error: ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
