@@ -47,8 +47,8 @@ class CustomerController extends Controller
         // Convert to array to safely modify the response data
         $responseData = $customer->toArray();
         if ($customer->image) {
-            $responseData['image'] = (strpos($customer->image, 'uploads/') === 0) 
-                ? url($customer->image) 
+            $responseData['image'] = (strpos($customer->image, 'uploads/') === 0)
+                ? url($customer->image)
                 : url('storage/' . $customer->image);
         } else {
             $responseData['image'] = null;
@@ -116,8 +116,8 @@ class CustomerController extends Controller
         // Convert to array to safely modify the response data
         $responseData = $customer->toArray();
         if ($customer->image) {
-            $responseData['image'] = (strpos($customer->image, 'uploads/') === 0) 
-                ? url($customer->image) 
+            $responseData['image'] = (strpos($customer->image, 'uploads/') === 0)
+                ? url($customer->image)
                 : url('storage/' . $customer->image);
         } else {
             $responseData['image'] = null;
@@ -136,23 +136,23 @@ class CustomerController extends Controller
     public function notifications(Request $request)
     {
         $customer = Auth::guard('sanctum')->user();
-            
+
         // Get notifications for the customer, ordered by newest first
         $notifications = $customer->notifications()->latest()->get();
-            
+
         return response()->json([
             'status' => 'success',
             'data' => $notifications
         ]);
     }
-        
+
     /**
      * Get all types of notifications including admin updates
      */
     public function getAllNotifications(Request $request)
     {
         $customer = Auth::guard('sanctum')->user();
-            
+
         // Validate that the customer has an admin
         if (!$customer || !$customer->admin_id) {
             return response()->json([
@@ -160,15 +160,15 @@ class CustomerController extends Controller
                 'message' => 'Invalid customer data.'
             ], 400);
         }
-            
+
         $notifications = [];
-            
+
         // Get database notifications
         $databaseNotifications = \App\Models\Notification::where('customer_id', $customer->id)
             ->where('is_read', false)
             ->orderBy('created_at', 'desc')
             ->get();
-                
+
         foreach ($databaseNotifications as $dbNotification) {
             $notificationItem = [
                 'id' => $dbNotification->id,
@@ -180,7 +180,7 @@ class CustomerController extends Controller
                 'created_at' => $dbNotification->created_at,
                 'data' => null
             ];
-            
+
             // Add related data based on notification type
             if ($dbNotification->related_type && $dbNotification->related_id) {
                 switch ($dbNotification->related_type) {
@@ -217,17 +217,17 @@ class CustomerController extends Controller
                         break;
                 }
             }
-            
+
             $notifications[] = $notificationItem;
         }
-            
+
         // // Get admin events
         // $events = \App\Models\Event::where('admin_id', $customer->admin_id)
         //     ->where('status', 'active')
         //     ->where('created_at', '>=', now()->subDays(7)) // Last 7 days
         //     ->orderBy('created_at', 'desc')
         //     ->get();
-                
+
         // foreach ($events as $event) {
         //     $notifications[] = [
         //         'type' => 'event',
@@ -237,14 +237,14 @@ class CustomerController extends Controller
         //         'created_at' => $event->created_at
         //     ];
         // }
-            
+
         // // Get admin gallery items
         // $galleries = \App\Models\GalleryItem::where('admin_id', $customer->admin_id)
         //     ->where('status', 'active')
         //     ->where('created_at', '>=', now()->subDays(7)) // Last 7 days
         //     ->orderBy('created_at', 'desc')
         //     ->get();
-                
+
         // foreach ($galleries as $gallery) {
         //     $notifications[] = [
         //         'type' => 'gallery',
@@ -254,14 +254,14 @@ class CustomerController extends Controller
         //         'created_at' => $gallery->created_at
         //     ];
         // }
-            
+
         // // Get admin news
         // $news = \App\Models\News::where('admin_id', $customer->admin_id)
         //     ->where('status', 'active')
         //     ->where('created_at', '>=', now()->subDays(7)) // Last 7 days
         //     ->orderBy('created_at', 'desc')
         //     ->get();
-                
+
         // foreach ($news as $new) {
         //     $notifications[] = [
         //         'type' => 'news',
@@ -271,7 +271,7 @@ class CustomerController extends Controller
         //         'created_at' => $new->created_at
         //     ];
         // }
-            
+
         // // Get today's birthdays
         // $birthdays = \App\Models\Customer::where('admin_id', $customer->admin_id)
         //     ->whereNotNull('date_of_birth')
@@ -279,7 +279,7 @@ class CustomerController extends Controller
         //     ->whereRaw('DAY(date_of_birth) = ?', [date('d')])
         //     ->select('id', 'name', 'mobile', 'date_of_birth')
         //     ->get();
-                
+
         // foreach ($birthdays as $birthday) {
         //     $notifications[] = [
         //         'type' => 'birthday',
@@ -289,7 +289,7 @@ class CustomerController extends Controller
         //         'created_at' => now()
         //     ];
         // }
-            
+
         // Get today's anniversaries
         $anniversaries = \App\Models\Customer::where('admin_id', $customer->admin_id)
             ->whereNotNull('anniversary_date')
@@ -297,7 +297,7 @@ class CustomerController extends Controller
             ->whereRaw('DAY(anniversary_date) = ?', [date('d')])
             ->select('id', 'name', 'mobile', 'anniversary_date')
             ->get();
-                
+
         foreach ($anniversaries as $anniversary) {
             $notifications[] = [
                 'type' => 'anniversary',
@@ -307,29 +307,29 @@ class CustomerController extends Controller
                 'created_at' => now()
             ];
         }
-            
+
         // Sort all notifications by date (newest first)
         usort($notifications, function ($a, $b) {
             $dateA = $a['created_at'] instanceof \Carbon\Carbon ? $a['created_at'] : strtotime($a['created_at']);
             $dateB = $b['created_at'] instanceof \Carbon\Carbon ? $b['created_at'] : strtotime($b['created_at']);
-            
+
             if (is_numeric($dateA) && is_numeric($dateB)) {
                 return $dateB - $dateA; // Descending order (newest first)
             }
-            
+
             // If one is Carbon and other is string, convert both to timestamp
             $timestampA = is_object($dateA) ? $dateA->timestamp : $dateA;
             $timestampB = is_object($dateB) ? $dateB->timestamp : $dateB;
-            
+
             return $timestampB - $timestampA;
         });
-            
+
         return response()->json([
             'status' => 'success',
             'data' => $notifications
         ]);
     }
-    
+
     /**
      * Helper method to get notification title based on type
      */
@@ -343,7 +343,7 @@ class CustomerController extends Controller
             'birthday_today' => 'Today is Birthday',
             'anniversary_today' => 'Today is Anniversary',
         ];
-        
+
         return $titles[$type] ?? ucfirst(str_replace('_', ' ', $type));
     }
 
@@ -361,48 +361,52 @@ class CustomerController extends Controller
         ]);
     }
     public function listCustomers(Request $request)
-{
-    $user = Auth::guard('sanctum')->user();
+    {
+        $user = Auth::guard('sanctum')->user();
 
-    if (!$user || !$user->admin_id) {
-        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
-    }
+        if (!$user || !$user->admin_id) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
 
-    $search = $request->query('search');
+        $search = $request->query('search');
 
-    // 1. Fetch Villages
-    $villages = Village::whereHas('customers', function ($q) use ($user) {
+        // 1. Fetch Villages
+        $villages = Village::whereHas('customers', function ($q) use ($user) {
             $q->where('admin_id', $user->admin_id);
         })
-        ->with(['customers' => function ($query) use ($user, $search) {
-            // 2. Filter customers by admin_id and exclude the logged-in user
-            $query->where('admin_id', $user->admin_id)
-                  ->where('id', '!=', $user->id)
-                  ->with('familyMembers'); // Eager load family members
+            ->with(['customers' => function ($query) use ($user, $search) {
+                // 2. Filter customers by admin_id and exclude the logged-in user
+                $query->where('admin_id', $user->admin_id)
+                    ->where('id', '!=', $user->id)
+                    ->with('familyMembers'); // Eager load family members
 
-            // 3. Apply search inside the village grouping if needed
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', "%$search%")
-                      ->orWhere('mobile', 'LIKE', "%$search%")
-                      ->orWhere('business_name', 'LIKE', "%$search%")
-                      ->orWhere('father_name', 'LIKE', "%$search%");
-                });
-            }
-        }])
-        ->get()
-        ->map(function ($village) {
-            // 4. Add the count for each village dynamically
-            $village->customer_count = $village->customers->count();
-            return $village;
-        });
+                // 3. Apply search inside the village grouping if needed
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%$search%")
+                            ->orWhere('mobile', 'LIKE', "%$search%")
+                            ->orWhere('business_name', 'LIKE', "%$search%")
+                            ->orWhere('father_name', 'LIKE', "%$search%")
+                            // This searches the 'name' column inside the 'villages' table
+                            ->orWhereHas('village', function ($vQuery) use ($search) {
+                                $vQuery->where('name', 'LIKE', "%$search%");
+                            });
+                    });
+                }
+            }])
+            ->get()
+            ->map(function ($village) {
+                // 4. Add the count for each village dynamically
+                $village->customer_count = $village->customers->count();
+                return $village;
+            });
 
-    return response()->json([
-        'status' => 'success',
-        'total_villages' => $villages->count(),
-        'data' => $villages
-    ]);
-}
+        return response()->json([
+            'status' => 'success',
+            'total_villages' => $villages->count(),
+            'data' => $villages
+        ]);
+    }
 
     /**
      * Display details of a specific customer from the same admin
@@ -445,13 +449,13 @@ class CustomerController extends Controller
     public function gallery(Request $request)
     {
         $customer = Auth::guard('sanctum')->user();
-        
+
         // Get gallery items from the same admin
         $galleryItems = GalleryItem::where('admin_id', $customer->admin_id)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Add full image and video URLs to each gallery item
         $galleryItemsWithUrls = $galleryItems->map(function ($item) {
             $itemArray = $item->toArray();
@@ -459,7 +463,7 @@ class CustomerController extends Controller
             $itemArray['video_paths_url'] = $item->video_paths_url;
             return $itemArray;
         });
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $galleryItemsWithUrls
@@ -654,9 +658,9 @@ class CustomerController extends Controller
         }
 
         $data = $query->with(['supports' => function ($q) {
-                $q->where('status', 'active')
-                  ->orderBy('created_at', 'desc');
-            }])
+            $q->where('status', 'active')
+                ->orderBy('created_at', 'desc');
+        }])
             ->get()
             ->flatMap(function ($category) {
                 return $category->supports->map(function ($support) use ($category) {
@@ -695,7 +699,7 @@ class CustomerController extends Controller
                 ->where('name', $categoryName)
                 ->with(['supports' => function ($query) {
                     $query->where('status', 'active')
-                          ->orderBy('created_at', 'desc');
+                        ->orderBy('created_at', 'desc');
                 }])
                 ->first();
 
@@ -758,7 +762,7 @@ class CustomerController extends Controller
         // Convert to array and add full image URL
         $data = $committeeMembers->map(function ($member) {
             $memberArray = $member->toArray();
-            
+
             if ($member->image_path) {
                 $memberArray['image_path'] = (strpos($member->image_path, 'uploads/') === 0)
                     ? url($member->image_path)
@@ -766,10 +770,10 @@ class CustomerController extends Controller
             } else {
                 $memberArray['image_path'] = null;
             }
-            
+
             // Add 'image' alias for consistency with other APIs
             $memberArray['image'] = $memberArray['image_path'];
-            
+
             return $memberArray;
         });
 
@@ -847,13 +851,13 @@ class CustomerController extends Controller
     public function showGalleryItem(Request $request, $id)
     {
         $customer = Auth::guard('sanctum')->user();
-        
+
         // Get the specific gallery item from the same admin
         $galleryItem = GalleryItem::where('id', $id)
             ->where('admin_id', $customer->admin_id)
             ->where('status', 'active')
             ->first();
-            
+
         // Check if gallery item exists and belongs to the same admin
         if (!$galleryItem) {
             return response()->json([
@@ -861,11 +865,11 @@ class CustomerController extends Controller
                 'message' => 'Gallery item not found or access denied.'
             ], 404);
         }
-        
+
         $galleryItemArray = $galleryItem->toArray();
         $galleryItemArray['image_paths_url'] = $galleryItem->image_paths_url;
         $galleryItemArray['video_paths_url'] = $galleryItem->video_paths_url;
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $galleryItemArray
@@ -1580,44 +1584,44 @@ class CustomerController extends Controller
     public function markRead(Request $request, $id)
     {
         $customer = Auth::guard('sanctum')->user();
-        
+
         $notification = $customer->notifications()->where('id', $id)->first();
-        
+
         if (!$notification) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Notification not found.'
             ], 404);
         }
-        
+
         $notification->update([
             'is_read' => true,
             'read_at' => now()
         ]);
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Notification marked as read successfully!'
         ]);
     }
-    
+
     // /**
     //  * Mark all notifications as read
     //  */
     public function markallreadnotifications(Request $request)
     {
         $customer = Auth::guard('sanctum')->user();
-        
+
         $customer->notifications()->update([
             'is_read' => true,
             'read_at' => now()
         ]);
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'All notifications marked as read successfully!'
         ]);
-     }
+    }
 
     // /**
     //  * Get count of unread notifications
